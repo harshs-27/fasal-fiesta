@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fasal Fiesta — AI Companion for Cropping</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&family=Space+Mono&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+</head>
+<body>
+  <!-- Animated background -->
+  <div class="bg-canvas">
+    <div class="grain-overlay"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="field-lines"></div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <span class="nav-icon">🌾</span>
+      <span class="nav-title">Fasal Fiesta</span>
+    </div>
+    <div class="nav-tagline">AI Companion for Cropping</div>
+    <div class="nav-status">
+      <span class="status-dot"></span>
+      <span>AI Online</span>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-icon">✦</span> Powered by Machine Learning
+      </div>
+      <h1 class="hero-title">
+        <span class="title-line-1">Fasal</span>
+        <span class="title-line-2">Fiesta</span>
+      </h1>
+      <p class="hero-subtitle">Your intelligent AI companion that predicts yields, detects crop diseases, and forecasts market prices — all in one platform.</p>
+      <div class="hero-stats">
+        <div class="stat-item">
+          <span class="stat-num">8K+</span>
+          <span class="stat-label">Data Points</span>
+        </div>
+        <div class="stat-divider">|</div>
+        <div class="stat-item">
+          <span class="stat-num">11</span>
+          <span class="stat-label">Crop Types</span>
+        </div>
+        <div class="stat-divider">|</div>
+        <div class="stat-item">
+          <span class="stat-num">3</span>
+          <span class="stat-label">AI Modules</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="globe-ring"></div>
+      <div class="globe-ring ring-2"></div>
+      <div class="globe-ring ring-3"></div>
+      <div class="crop-icon-float">🌱</div>
+    </div>
+  </section>
+
+  <!-- Module Cards -->
+  <section class="modules-section">
+    <div class="section-label">SELECT MODULE</div>
+    <h2 class="section-title">Choose Your AI Tool</h2>
+
+    <div class="module-grid">
+      <!-- Module 1 -->
+      <a href="/crop" class="module-card card-yield">
+        <div class="card-number">01</div>
+        <div class="card-icon-wrap">
+          <div class="card-icon">🌾</div>
+          <div class="card-icon-bg"></div>
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">Crop Yield Prediction</h3>
+          <p class="card-subtitle">& Fertilizer Recommendation</p>
+          <p class="card-desc">Input soil type, temperature, humidity and nutrients to predict your crop's yield and get personalized fertilizer advice.</p>
+          <div class="card-tags">
+            <span class="tag">Random Forest</span>
+            <span class="tag">8K Samples</span>
+            <span class="tag">11 Crops</span>
+          </div>
+        </div>
+        <div class="card-arrow">→</div>
+        <div class="card-glow"></div>
+      </a>
+
+      <!-- Module 2 -->
+      <a href="/disease" class="module-card card-disease">
+        <div class="card-number">02</div>
+        <div class="card-icon-wrap">
+          <div class="card-icon">🔬</div>
+          <div class="card-icon-bg"></div>
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">Plant Disease</h3>
+          <p class="card-subtitle">Detection via Image AI</p>
+          <p class="card-desc">Upload a photo of your crop leaf and our deep learning model detects diseases instantly with treatment recommendations.</p>
+          <div class="card-tags">
+            <span class="tag">CNN Model</span>
+            <span class="tag">PlantVillage</span>
+            <span class="tag">38 Classes</span>
+          </div>
+        </div>
+        <div class="card-arrow">→</div>
+        <div class="card-glow"></div>
+      </a>
+
+      <!-- Module 3 -->
+      <a href="/price" class="module-card card-price">
+        <div class="card-number">03</div>
+        <div class="card-icon-wrap">
+          <div class="card-icon">📈</div>
+          <div class="card-icon-bg"></div>
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">Price Prediction</h3>
+          <p class="card-subtitle">Market Forecasting Engine</p>
+          <p class="card-desc">Forecast crop market prices based on season, location, and historical trends to maximize your profits at the right time.</p>
+          <div class="card-tags">
+            <span class="tag">LSTM Model</span>
+            <span class="tag">Agmarknet</span>
+            <span class="tag">Live Data</span>
+          </div>
+        </div>
+        <div class="card-arrow">→</div>
+        <div class="card-glow"></div>
+      </a>
+    </div>
+  </section>
+
+  <!-- Feature strip -->
+  <section class="feature-strip">
+    <div class="strip-item"><span>🌿</span> Soil Analysis</div>
+    <div class="strip-item"><span>☁️</span> Weather Integration</div>
+    <div class="strip-item"><span>🤖</span> ML Predictions</div>
+    <div class="strip-item"><span>📊</span> Visual Reports</div>
+    <div class="strip-item"><span>🛡️</span> Disease Shield</div>
+    <div class="strip-item"><span>💰</span> Price Alerts</div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">🌾 Fasal Fiesta</div>
+      <p class="footer-text">Major Project — AI Companion for Cropping | Built with Flask & ML</p>
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

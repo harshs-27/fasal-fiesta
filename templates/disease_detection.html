@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plant Disease Detection — Fasal Fiesta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&family=Space+Mono&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+  <style>
+    .split-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+    .panel { background:rgba(45,31,14,0.6); border:1px solid var(--border); border-radius:16px; padding:32px; backdrop-filter:blur(10px); }
+    .panel-title { font-family:'Playfair Display',serif; font-size:1.2rem; color:var(--lime); margin-bottom:24px; display:flex; align-items:center; gap:10px; }
+
+    /* Drop Zone */
+    .drop-zone {
+      border: 2px dashed rgba(140,198,63,0.4); border-radius: 16px;
+      padding: 60px 40px; text-align: center; cursor: pointer;
+      transition: all 0.3s; position: relative; overflow: hidden;
+      background: rgba(140,198,63,0.04);
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--lime); background: rgba(140,198,63,0.1);
+      transform: scale(1.01);
+    }
+    .drop-icon { font-size: 3.5rem; margin-bottom: 16px; display: block; }
+    .drop-text { font-size: 1rem; color: var(--text-dim); line-height: 1.6; }
+    .drop-text strong { color: var(--lime); }
+    .drop-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+    /* Preview */
+    .preview-wrap { margin-top: 20px; border-radius: 12px; overflow: hidden; display: none; position: relative; }
+    .preview-wrap.show { display: block; }
+    .preview-wrap img { width: 100%; max-height: 300px; object-fit: cover; border-radius: 12px; }
+    .preview-overlay {
+      position: absolute; top: 10px; right: 10px;
+      background: rgba(26,18,8,0.8); border-radius: 8px;
+      padding: 6px 12px; font-size: 0.75rem; color: var(--text-dim);
+    }
+
+    /* Scan button */
+    .scan-btn {
+      width: 100%; margin-top: 16px; padding: 14px;
+      background: linear-gradient(135deg, var(--sage), var(--lime));
+      color: var(--soil); border: none; border-radius: 12px;
+      font-size: 1rem; font-weight: 700; cursor: pointer; letter-spacing: 0.05em;
+      transition: transform 0.2s, box-shadow 0.2s; font-family: 'DM Sans', sans-serif;
+      display: none;
+    }
+    .scan-btn.show { display: block; }
+    .scan-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(140,198,63,0.4); }
+
+    /* Result cards */
+    .pred-card {
+      padding: 20px; border-radius: 14px; border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04); margin-bottom: 16px;
+      position: relative; overflow: hidden; transition: transform 0.2s;
+    }
+    .pred-card:hover { transform: translateY(-3px); }
+    .pred-card.top { border-color: rgba(140,198,63,0.5); background: rgba(140,198,63,0.07); }
+    .pred-rank { font-family: 'Space Mono', monospace; font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.15em; }
+    .pred-name { font-family: 'Playfair Display', serif; font-size: 1.1rem; margin: 4px 0 8px; }
+    .pred-conf-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.1); margin-bottom: 8px; }
+    .pred-conf-fill { height: 100%; border-radius: 3px; transition: width 1s cubic-bezier(.2,.8,.2,1); }
+    .pred-meta { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .pred-badge {
+      padding: 3px 10px; border-radius: 50px; font-size: 0.7rem; font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+    .sev-none     { background:rgba(39,174,96,0.2);  color:#27ae60; }
+    .sev-medium   { background:rgba(230,126,34,0.2); color:#e67e22; }
+    .sev-high     { background:rgba(192,57,43,0.2);  color:#e74c3c; }
+    .sev-critical { background:rgba(123,36,28,0.35); color:#ff6b6b; border:1px solid rgba(255,107,107,0.4); }
+    .pred-detail { font-size: 0.82rem; color: var(--text-dim); line-height: 1.65; }
+    .detail-label { font-weight: 600; color: var(--lime); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; margin-top: 10px; }
+    .placeholder-msg { text-align:center; padding:60px 20px; color:var(--text-dim); }
+
+    @media(max-width:900px){ .split-layout{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+<div class="bg-canvas">
+  <div class="grain-overlay"></div>
+  <div class="orb" style="width:500px;height:500px;background:var(--lime);top:-100px;left:-100px;opacity:0.12;filter:blur(100px);position:absolute;"></div>
+  <div class="orb" style="width:400px;height:400px;background:var(--sky);bottom:-100px;right:10%;opacity:0.1;filter:blur(80px);position:absolute;"></div>
+</div>
+
+<nav class="navbar" style="position:relative;z-index:100;">
+  <div class="nav-brand"><span class="nav-icon">🔬</span><span class="nav-title">Fasal Fiesta</span></div>
+  <div class="nav-tagline">Plant Disease Detection Module</div>
+  <div class="nav-status"><span class="status-dot" style="background:var(--lime);box-shadow:0 0 10px var(--lime);"></span><span>AI Online</span></div>
+</nav>
+
+<div class="module-page" style="position:relative;z-index:1;">
+  <div class="module-header">
+    <a href="/" class="back-btn">← Home</a>
+    <span class="module-badge badge-disease">Module 02</span>
+    <h1 class="module-title">🔬 Plant Disease Detection</h1>
+  </div>
+
+  <div class="module-body">
+    <div class="split-layout">
+
+      <!-- UPLOAD PANEL -->
+      <div class="panel">
+        <div class="panel-title">📸 Upload Leaf Image</div>
+        <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:20px;line-height:1.6;">
+          Take a clear, well-lit photo of a single leaf showing symptoms.
+          Supports JPG, PNG, WEBP. The AI model is trained on 38 disease classes from the <strong style="color:var(--lime);">PlantVillage dataset</strong>.
+        </p>
+
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('imgInput').click()">
+          <input type="file" id="imgInput" class="drop-input" accept="image/*" onchange="handleFile(this.files[0])">
+          <span class="drop-icon">🌿</span>
+          <div class="drop-text">
+            <strong>Click to upload</strong> or drag & drop a leaf photo<br>
+            <small style="font-size:0.75rem;margin-top:6px;display:block;">JPG, PNG, WEBP — Max 10MB</small>
+          </div>
+        </div>
+
+        <div class="preview-wrap" id="previewWrap">
+          <img id="previewImg" src="" alt="Preview" />
+          <div class="preview-overlay" id="fileName"></div>
+        </div>
+
+        <button class="scan-btn" id="scanBtn" onclick="runDetection()">
+          🔍 Scan for Diseases
+        </button>
+
+        <!-- Dataset info card -->
+        <div style="margin-top:24px;padding:16px;border-radius:12px;background:rgba(77,184,212,0.08);border:1px solid rgba(77,184,212,0.2);">
+          <div style="font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--sky);margin-bottom:8px;">📦 Dataset Info</div>
+          <div style="font-size:0.82rem;color:var(--text-dim);line-height:1.7;">
+            Model trained on <strong style="color:var(--text);">PlantVillage Dataset</strong> — 87,000+ images, 38 classes, 14 crop species.<br><br>
+            <strong style="color:var(--sky);">Download:</strong><br>
+            → <a href="https://www.kaggle.com/datasets/abdallahalidev/plantvillage-dataset" target="_blank" style="color:var(--lime);">Kaggle PlantVillage</a><br>
+            → Place in: <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;">data/PlantVillage/</code><br>
+            → Train: <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;">python modules/disease_detection/model.py</code>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULT PANEL -->
+      <div class="panel">
+        <div class="panel-title">🧪 Detection Results</div>
+
+        <div class="loading-spinner" id="loader">
+          <div class="spinner" style="border-top-color:var(--lime);"></div>
+          <p>Analyzing leaf morphology & disease patterns…</p>
+        </div>
+
+        <div id="results"></div>
+
+        <div class="placeholder-msg" id="placeholder">
+          <div style="font-size:4rem;margin-bottom:16px;">🌿</div>
+          <p>Upload a leaf photo and click Scan to detect diseases with AI.</p>
+          <p style="margin-top:10px;font-size:0.8rem;">Supports 38 disease categories across 14 crop types.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const dropZone = document.getElementById('dropZone');
+let selectedFile = null;
+
+// Drag & drop
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) handleFile(f);
+});
+
+function handleFile(file) {
+  if (!file) return;
+  selectedFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('previewImg').src = e.target.result;
+    document.getElementById('previewWrap').classList.add('show');
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('scanBtn').classList.add('show');
+  };
+  reader.readAsDataURL(file);
+}
+
+async function runDetection() {
+  if (!selectedFile) return;
+  document.getElementById('placeholder').style.display = 'none';
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('loader').classList.add('show');
+
+  const formData = new FormData();
+  formData.append('image', selectedFile);
+
+  try {
+    const res = await fetch('/disease/predict', { method: 'POST', body: formData });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error);
+    displayResults(json.predictions);
+  } catch(e) {
+    document.getElementById('results').innerHTML = `<div style="color:#e74c3c;padding:20px;text-align:center;">⚠️ ${e.message}</div>`;
+  } finally {
+    document.getElementById('loader').classList.remove('show');
+  }
+}
+
+function displayResults(preds) {
+  const sevClass = { 'None':'sev-none', 'Medium':'sev-medium', 'High':'sev-high', 'Critical':'sev-critical', 'Unknown':'sev-medium' };
+  const container = document.getElementById('results');
+
+  preds.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.className = 'pred-card' + (i === 0 ? ' top' : '');
+    div.innerHTML = `
+      <div class="pred-rank">${i===0?'⭐ TOP MATCH':'ALTERNATIVE '+(i+1)}</div>
+      <div class="pred-name">${p.display}</div>
+      <div class="pred-meta">
+        <span class="pred-badge ${sevClass[p.severity]||'sev-medium'}">
+          ${p.severity === 'None' ? '✅ Healthy' : '⚠️ ' + p.severity + ' Severity'}
+        </span>
+        <span class="pred-badge" style="background:rgba(255,255,255,0.06);color:var(--text-dim);">
+          ${p.confidence}% confidence
+        </span>
+      </div>
+      <div class="pred-conf-bar">
+        <div class="pred-conf-fill" style="width:0%;background:${p.color};" data-width="${p.confidence}"></div>
+      </div>
+      ${i === 0 ? `
+        <div class="detail-label">🩺 Treatment</div>
+        <div class="pred-detail">${p.treatment}</div>
+        <div class="detail-label">🛡️ Prevention</div>
+        <div class="pred-detail">${p.prevention}</div>
+      ` : ''}
+    `;
+    container.appendChild(div);
+  });
+
+  // Animate bars
+  setTimeout(() => {
+    container.querySelectorAll('.pred-conf-fill').forEach(el => {
+      el.style.width = el.dataset.width + '%';
+    });
+  }, 100);
+}
+</script>
+</body>
+</html>

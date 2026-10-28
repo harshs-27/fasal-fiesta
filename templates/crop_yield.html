@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crop Yield Prediction — Fasal Fiesta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&family=Space+Mono&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .split-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+    .panel {
+      background: rgba(45,31,14,0.6); border: 1px solid var(--border);
+      border-radius: 16px; padding: 32px; backdrop-filter: blur(10px);
+    }
+    .panel-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--gold); margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+    .range-wrap { display: flex; align-items: center; gap: 12px; }
+    .range-val { font-family: 'Space Mono', monospace; font-size: 0.9rem; color: var(--gold); min-width: 50px; text-align: right; }
+    input[type=range] {
+      flex: 1; -webkit-appearance: none; height: 4px;
+      background: linear-gradient(to right, var(--amber) 0%, var(--amber) var(--pct,50%), rgba(255,255,255,0.1) var(--pct,50%));
+      border-radius: 4px; outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+      background: var(--gold); cursor: pointer; box-shadow: 0 0 8px rgba(240,180,41,0.5);
+    }
+    .yield-display {
+      text-align: center; padding: 30px;
+      background: linear-gradient(135deg, rgba(212,135,10,0.15), rgba(140,198,63,0.1));
+      border-radius: 14px; border: 1px solid var(--amber);
+      margin-bottom: 20px;
+    }
+    .yield-number { font-family: 'Playfair Display', serif; font-size: 4rem; font-weight: 900; color: var(--gold); }
+    .yield-unit { font-size: 0.85rem; color: var(--text-dim); letter-spacing: 0.1em; margin-top: 4px; }
+    .fert-badge {
+      display: inline-block; padding: 10px 24px; border-radius: 50px;
+      background: linear-gradient(135deg, var(--sage), var(--lime));
+      color: var(--soil); font-weight: 700; font-size: 1.1rem; margin-bottom: 12px;
+    }
+    .fert-tip { font-size: 0.85rem; line-height: 1.6; color: var(--text-dim); padding: 12px; background: rgba(255,255,255,0.04); border-radius: 8px; border-left: 3px solid var(--lime); }
+    .chart-wrap { margin-top: 20px; height: 220px; }
+    .npk-bar { display: flex; gap: 10px; margin-top: 16px; }
+    .npk-item { flex: 1; text-align: center; }
+    .npk-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 6px; }
+    .npk-pill {
+      padding: 6px 4px; border-radius: 8px;
+      font-family: 'Space Mono', monospace; font-size: 1rem; font-weight: 700;
+    }
+    .npk-n { background: rgba(140,198,63,0.2); color: var(--lime); }
+    .npk-p { background: rgba(77,184,212,0.2); color: var(--sky); }
+    .npk-k { background: rgba(212,135,10,0.2); color: var(--amber); }
+    @media(max-width:900px){ .split-layout{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+<div class="bg-canvas">
+  <div class="grain-overlay"></div>
+  <div class="orb orb-1"></div><div class="orb orb-2"></div>
+</div>
+
+<nav class="navbar">
+  <div class="nav-brand"><span class="nav-icon">🌾</span><span class="nav-title">Fasal Fiesta</span></div>
+  <div class="nav-tagline">Crop Yield & Fertilizer Module</div>
+  <div class="nav-status"><span class="status-dot"></span><span>AI Online</span></div>
+</nav>
+
+<div class="module-page" style="position:relative;z-index:1;">
+  <div class="module-header">
+    <a href="/" class="back-btn">← Home</a>
+    <span class="module-badge badge-yield">Module 01</span>
+    <h1 class="module-title">🌾 Crop Yield Prediction & Fertilizer Recommendation</h1>
+  </div>
+
+  <div class="module-body">
+    <div class="split-layout">
+
+      <!-- INPUT PANEL -->
+      <div class="panel">
+        <div class="panel-title">🌿 Input Parameters</div>
+
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <!-- Crop & Soil -->
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Crop Type</label>
+              <select class="form-select" id="crop_type">
+                {% for c in crop_types %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Soil Type</label>
+              <select class="form-select" id="soil_type">
+                {% for s in soil_types %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <!-- Temperature -->
+          <div class="form-group">
+            <label class="form-label">Temperature (°C)</label>
+            <div class="range-wrap">
+              <input type="range" id="temperature" min="20" max="40" step="0.5" value="30" oninput="updateRange(this,'temp_val')">
+              <span class="range-val" id="temp_val">30.0°C</span>
+            </div>
+          </div>
+
+          <!-- Humidity -->
+          <div class="form-group">
+            <label class="form-label">Humidity (%)</label>
+            <div class="range-wrap">
+              <input type="range" id="humidity" min="40" max="80" step="0.5" value="60" oninput="updateRange(this,'hum_val')">
+              <span class="range-val" id="hum_val">60.0%</span>
+            </div>
+          </div>
+
+          <!-- Moisture -->
+          <div class="form-group">
+            <label class="form-label">Soil Moisture (%)</label>
+            <div class="range-wrap">
+              <input type="range" id="moisture" min="20" max="80" step="1" value="50" oninput="updateRange(this,'mois_val')">
+              <span class="range-val" id="mois_val">50%</span>
+            </div>
+          </div>
+
+          <!-- Rainfall -->
+          <div class="form-group">
+            <label class="form-label">Rainfall (mm)</label>
+            <div class="range-wrap">
+              <input type="range" id="rainfall" min="80" max="170" step="1" value="125" oninput="updateRange(this,'rain_val')">
+              <span class="range-val" id="rain_val">125mm</span>
+            </div>
+          </div>
+
+          <!-- NPK -->
+          <div>
+            <label class="form-label" style="margin-bottom:12px;display:block;">Soil Nutrients (mg/kg)</label>
+            <div class="npk-bar">
+              <div class="npk-item">
+                <div class="npk-label">Nitrogen (N)</div>
+                <input type="number" class="form-input npk-n" id="nitrogen" value="37" min="0" max="140" style="text-align:center;font-size:1.1rem;font-family:'Space Mono',monospace;padding:10px 6px;">
+              </div>
+              <div class="npk-item">
+                <div class="npk-label">Phosphorous (P)</div>
+                <input type="number" class="form-input npk-p" id="phosphorous" value="0" min="0" max="100" style="text-align:center;font-size:1.1rem;font-family:'Space Mono',monospace;padding:10px 6px;">
+              </div>
+              <div class="npk-item">
+                <div class="npk-label">Potassium (K)</div>
+                <input type="number" class="form-input npk-k" id="potassium" value="0" min="0" max="100" style="text-align:center;font-size:1.1rem;font-family:'Space Mono',monospace;padding:10px 6px;">
+              </div>
+            </div>
+          </div>
+
+          <button class="submit-btn" onclick="runPrediction()" style="width:100%;margin-top:8px;">
+            🔮 Predict Yield & Fertilizer
+          </button>
+        </div>
+      </div>
+
+      <!-- OUTPUT PANEL -->
+      <div class="panel">
+        <div class="panel-title">📊 Prediction Results</div>
+
+        <div class="loading-spinner" id="loader">
+          <div class="spinner"></div>
+          <p>AI is analyzing your field data…</p>
+        </div>
+
+        <div id="results" style="display:none;">
+          <div class="yield-display">
+            <div style="font-size:0.75rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;">Predicted Yield</div>
+            <div class="yield-number" id="yield_val">—</div>
+            <div class="yield-unit">Quintals / Hectare</div>
+          </div>
+
+          <div style="margin-bottom:20px;">
+            <div style="font-size:0.75rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;">Recommended Fertilizer</div>
+            <div style="text-align:center;">
+              <div class="fert-badge" id="fert_name">—</div>
+            </div>
+            <div class="fert-tip" id="fert_tip"></div>
+          </div>
+
+          <div>
+            <div style="font-size:0.75rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;">Fertilizer Confidence (% probability)</div>
+            <div class="chart-wrap"><canvas id="fertChart"></canvas></div>
+          </div>
+        </div>
+
+        <div id="placeholder" style="text-align:center;padding:60px 20px;color:var(--text-dim);">
+          <div style="font-size:4rem;margin-bottom:16px;">🌱</div>
+          <p>Fill in the field parameters and click Predict to see your AI-powered recommendations.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let fertChart = null;
+
+function updateRange(el, valId) {
+  const v = parseFloat(el.value);
+  const unit = el.id === 'temperature' ? '°C' : el.id === 'humidity' ? '%' : el.id === 'moisture' ? '%' : 'mm';
+  document.getElementById(valId).textContent = v.toFixed(el.id === 'temperature' || el.id === 'humidity' ? 1 : 0) + unit;
+  const min = parseFloat(el.min), max = parseFloat(el.max);
+  el.style.setProperty('--pct', ((v - min) / (max - min) * 100) + '%');
+}
+
+// Init range displays
+['temperature','humidity','moisture','rainfall'].forEach(id => {
+  const el = document.getElementById(id);
+  const map = {temperature:'temp_val',humidity:'hum_val',moisture:'mois_val',rainfall:'rain_val'};
+  updateRange(el, map[id]);
+});
+
+async function runPrediction() {
+  document.getElementById('placeholder').style.display = 'none';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('loader').classList.add('show');
+
+  const payload = {
+    temperature:  parseFloat(document.getElementById('temperature').value),
+    humidity:     parseFloat(document.getElementById('humidity').value),
+    moisture:     parseFloat(document.getElementById('moisture').value),
+    soil_type:    document.getElementById('soil_type').value,
+    crop_type:    document.getElementById('crop_type').value,
+    nitrogen:     parseFloat(document.getElementById('nitrogen').value),
+    potassium:    parseFloat(document.getElementById('potassium').value),
+    phosphorous:  parseFloat(document.getElementById('phosphorous').value),
+    rainfall:     parseFloat(document.getElementById('rainfall').value),
+  };
+
+  try {
+    const res = await fetch('/crop/predict', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error);
+    displayResults(json.data);
+  } catch(e) {
+    alert('Prediction error: ' + e.message);
+  } finally {
+    document.getElementById('loader').classList.remove('show');
+  }
+}
+
+function displayResults(d) {
+  document.getElementById('yield_val').textContent = d.yield.toFixed(2);
+  document.getElementById('fert_name').textContent  = d.fertilizer;
+  document.getElementById('fert_tip').textContent   = d.fertilizer_tip;
+  document.getElementById('results').style.display  = 'block';
+
+  // Chart
+  const probs = d.fertilizer_probabilities;
+  const labels = Object.keys(probs);
+  const values = Object.values(probs);
+  const colors = ['#d4870a','#8cc63f','#4db8d4','#f0b429','#a67c52','#5a7a2e','#2d8a9e'];
+
+  if (fertChart) fertChart.destroy();
+  const ctx = document.getElementById('fertChart').getContext('2d');
+  fertChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels, datasets: [{
+        data: values, backgroundColor: colors.slice(0,labels.length),
+        borderRadius: 6, borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#a89070', font:{size:10} }, grid:{color:'rgba(255,255,255,0.05)'} },
+        y: { ticks: { color: '#a89070', callback: v => v+'%' }, grid:{color:'rgba(255,255,255,0.05)'}, max:100 }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
